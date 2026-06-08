@@ -1,0 +1,30 @@
+{
+    "name": "sportclimbing/ifsc-ics-generator",
+    "description": "Shared JSON-to-ICS generator for IFSC calendar.",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Nicolas Oelgart",
+            "email": "nico@ifsc.stream"
+        }
+    ],
+    "require": {
+        "php": ">=8.5",
+        "eluceo/ical": "^2.16"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^12.5",
+        "sabre/vobject": "^4.6"
+    },
+    "autoload": {
+        "psr-4": {
+            "SportClimbing\\IcsGenerator\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "SportClimbing\\IcsGenerator\\Tests\\": "tests/"
+        }
+    }
+}

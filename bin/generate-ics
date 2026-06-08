@@ -1,0 +1,34 @@
+#!/usr/bin/env php
+<?php
+
+require __DIR__ . '/../vendor/autoload.php';
+
+use SportClimbing\IcsGenerator\CalendarFactory;
+use SportClimbing\IcsGenerator\IcsGenerator;
+
+$fixtureFile = $argv[1] ?? 'tests/fixtures/sample-calendar.json';
+$outputFile  = $argv[2] ?? 'generated.ics';
+
+if (!file_exists($fixtureFile)) {
+    echo "Fixture not found: {$fixtureFile} — skipping\n";
+    exit(0);
+}
+
+$json = json_decode(file_get_contents($fixtureFile), true);
+
+if (!is_array($json) || !isset($json['events'])) {
+    fwrite(STDERR, "Invalid fixture: missing 'events' key\n");
+    exit(1);
+}
+
+$gen = new IcsGenerator(
+    new CalendarFactory(),
+    '-//IFSC//IFSC Calendar//EN',
+    'PT12H',
+    'IFSC World Cups and World Championships',
+);
+
+file_put_contents($outputFile, $gen->generateForEvents($json['events']));
+
+$veventCount = substr_count(file_get_contents($outputFile), 'BEGIN:VEVENT');
+echo "Generated {$outputFile}: {$veventCount} VEVENTs\n";

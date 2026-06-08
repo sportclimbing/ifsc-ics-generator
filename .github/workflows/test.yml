@@ -1,0 +1,40 @@
+name: "Test"
+
+on:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout code"
+        uses: actions/checkout@v6
+
+      - name: "Setup PHP"
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.5
+          coverage: none
+
+      - name: "Install dependencies"
+        run: composer install --no-interaction
+
+      - name: "Download sample calendar fixture"
+        run: |
+          curl -fsSL "https://github.com/sportclimbing/ifsc-calendar/releases/latest/download/IFSC-World-Cups-and-World-Championships.json" \
+            --output tests/fixtures/sample-calendar.json 2>/dev/null || true
+
+      - name: "Run tests"
+        run: vendor/bin/phpunit --no-coverage
+
+      - name: "Generate ICS from sample fixture"
+        run: php bin/generate-ics tests/fixtures/sample-calendar.json generated.ics
+
+      - name: "Validate ICS"
+        run: ./vendor/bin/vobject validate generated.ics
+
+      - name: "Generate filtered ICS"
+        run: php bin/generate-filtered-ics tests/fixtures/sample-calendar.json filtered.ics --discipline=boulder --kind=final
+
+      - name: "Validate filtered ICS"
+        run: ./vendor/bin/vobject validate filtered.ics
