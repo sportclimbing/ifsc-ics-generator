@@ -23,9 +23,9 @@ if (!is_array($json) || !isset($json['events'])) {
 
 $gen = new IcsGenerator(
     new CalendarFactory(),
-    '-//IFSC//IFSC Calendar//EN',
-    'PT12H',
-    'IFSC World Cups and World Championships',
+    '-//IFSC//ical//EN',
+    'PT1H',
+    'IFSC',
 );
 
 file_put_contents($outputFile, $gen->generateForEvents($json['events']));
