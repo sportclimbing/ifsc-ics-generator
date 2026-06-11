@@ -101,6 +101,87 @@ final class CalendarFilterTest extends TestCase
         $this->assertCount(2, $result);
     }
 
+    // ── Series filtering ─────────────────────────────────────────────
+
+    public function test_series_filter_world_keeps_world_cup_events(): void
+    {
+        $events = $this->sampleEvents();
+        // Add a para event to show it gets excluded
+        $events[] = [
+            'id' => 3,
+            'name' => 'Para Event',
+            'location' => 'City C',
+            'country' => 'TST',
+            'country_name' => 'Testland',
+            'site_url' => 'https://ifsc.stream/event/3',
+            'starts_at' => '2026-08-01T09:00:00+02:00',
+            'ends_at' => '2026-08-03T19:00:00+02:00',
+            'timezone' => 'Europe/Zurich',
+            'league_name' => 'IFSC Paraclimbing',
+            'tickets' => ['summary' => '', 'purchase_url' => ''],
+            'rounds' => [
+                [
+                    'name' => 'Para Final',
+                    'categories' => ['men'],
+                    'disciplines' => ['lead'],
+                    'kind' => 'final',
+                    'starts_at' => '2026-08-01T14:00:00+02:00',
+                    'ends_at' => '2026-08-01T17:00:00+02:00',
+                    'schedule_status' => 'confirmed',
+                    'stream_url' => 'https://youtube.com/test5',
+                    'stream_blocked_regions' => [],
+                ],
+            ],
+            'start_list' => [],
+        ];
+
+        $params = new FilterParams(series: ['world']);
+        $result = CalendarFilter::apply($events, $params);
+
+        $this->assertCount(2, $result);
+        $this->assertEquals(1, $result[0]['id']);
+        $this->assertEquals(2, $result[1]['id']);
+    }
+
+    public function test_series_filter_para_excludes_world_cup_events(): void
+    {
+        $events = $this->sampleEvents();
+        $events[] = [
+            'id' => 3,
+            'name' => 'Para Event',
+            'location' => 'City C',
+            'country' => 'TST',
+            'country_name' => 'Testland',
+            'site_url' => 'https://ifsc.stream/event/3',
+            'starts_at' => '2026-08-01T09:00:00+02:00',
+            'ends_at' => '2026-08-03T19:00:00+02:00',
+            'timezone' => 'Europe/Zurich',
+            'league_name' => 'IFSC Paraclimbing',
+            'tickets' => ['summary' => '', 'purchase_url' => ''],
+            'rounds' => [
+                [
+                    'name' => 'Para Final',
+                    'categories' => ['men'],
+                    'disciplines' => ['lead'],
+                    'kind' => 'final',
+                    'starts_at' => '2026-08-01T14:00:00+02:00',
+                    'ends_at' => '2026-08-01T17:00:00+02:00',
+                    'schedule_status' => 'confirmed',
+                    'stream_url' => 'https://youtube.com/test5',
+                    'stream_blocked_regions' => [],
+                ],
+            ],
+            'start_list' => [],
+        ];
+
+        $params = new FilterParams(series: ['para']);
+        $result = CalendarFilter::apply($events, $params);
+
+        $this->assertCount(1, $result);
+        $this->assertEquals(3, $result[0]['id']);
+        $this->assertEquals('Para Event', $result[0]['name']);
+    }
+
     // ── Discipline filtering ────────────────────────────────────────
 
     public function test_discipline_filter_includes_only_matching(): void

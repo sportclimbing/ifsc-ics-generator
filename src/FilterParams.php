@@ -13,16 +13,18 @@ final readonly class FilterParams
      * @param string[] $disciplines  e.g. ['boulder', 'lead']
      * @param string[] $kinds        e.g. ['qualification', 'final']
      * @param string[] $categories   e.g. ['men', 'women']
+     * @param string[] $series       e.g. ['world', 'para']
      */
     public function __construct(
         public array $disciplines = [],
         public array $kinds = [],
         public array $categories = [],
+        public array $series = [],
     ) {}
 
     public function isEmpty(): bool
     {
-        return $this->disciplines === [] && $this->kinds === [] && $this->categories === [];
+        return $this->disciplines === [] && $this->kinds === [] && $this->categories === [] && $this->series === [];
     }
 
     /**
@@ -36,6 +38,7 @@ final readonly class FilterParams
             disciplines: self::parseCommaList($query['discipline'] ?? ''),
             kinds: self::parseCommaList($query['kind'] ?? ''),
             categories: self::parseCommaList($query['category'] ?? ''),
+            series: self::parseCommaList($query['series'] ?? ''),
         );
     }
 
