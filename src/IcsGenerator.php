@@ -26,8 +26,6 @@ use Exception;
 
 final readonly class IcsGenerator
 {
-    private const string DISCORD_URL = 'https://discord.gg/rbM5vjcVHM';
-
     public function __construct(
         private CalendarFactory $calendarFactory,
         private string $productIdentifier,
@@ -244,7 +242,8 @@ final readonly class IcsGenerator
         $description .= "☕️ If you find this useful, please consider buying me a coffee:\n";
         $description .= "https://buymeacoffee.com/sportclimbing\n\n";
 
-        $description .= "💬 Join Discord:\n" . self::DISCORD_URL . "\n\n";
+        $description .= "💬 Join Discord:\n";
+        $description .= "https://discord.gg/rbM5vjcVHM\n\n";
 
         $description .= "🐛 Report a bug/problem:\n";
         $description .= "https://github.com/sportclimbing/ifsc-calendar/issues\n";
@@ -278,15 +277,36 @@ final readonly class IcsGenerator
     {
         $startList = $event['start_list'] ?? [];
 
-        if ($round === null || ($round['categories'] ?? []) === []) {
+        if ($round === null || (($round['categories'] ?? []) === [] && ($round['disciplines'] ?? []) === [])) {
             return $startList;
         }
 
+        $categories = $round['categories'] ?? [];
+        $disciplines = $round['disciplines'] ?? [];
+
         return array_filter(
             $startList,
-            fn (array $athlete): bool => empty($athlete['category'])
-                || in_array($athlete['category'], $round['categories'], strict: true),
+            fn (array $athlete): bool => $this->athleteMatchesRound($athlete, $categories, $disciplines),
         );
+    }
+
+    /**
+     * @param array<string, mixed> $athlete
+     * @param string[] $categories
+     * @param string[] $disciplines
+     */
+    private function athleteMatchesRound(array $athlete, array $categories, array $disciplines): bool
+    {
+        $categoryOk = $categories === []
+            || empty($athlete['category'])
+            || in_array($athlete['category'], $categories, strict: true);
+
+        $athleteDisciplines = $athlete['disciplines'] ?? [];
+        $disciplineOk = $disciplines === []
+            || $athleteDisciplines === []
+            || array_intersect($athleteDisciplines, $disciplines) !== [];
+
+        return $categoryOk && $disciplineOk;
     }
 
     /**

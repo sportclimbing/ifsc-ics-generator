@@ -203,9 +203,174 @@ final class IcsGeneratorTest extends TestCase
     {
         $ics = $this->generateIcs($this->sampleEvents());
 
-        $this->assertStringContainsString('Start List', $ics);
-        $this->assertStringContainsString('Jane Doe', $ics);
-        $this->assertStringContainsString('(TST)', $ics);
+        // Unfold lines for text search (ICS wraps at 75 chars)
+        $unfolded = preg_replace("/\r\n\s/", '', $ics);
+
+        $this->assertStringContainsString('Start List', $unfolded);
+        $this->assertStringContainsString('Jane Doe', $unfolded);
+        $this->assertStringContainsString('(TST)', $unfolded);
+    }
+
+    // ── Start list filtering ────────────────────────────────────────
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function sampleAthlete(array $overrides = []): array
+    {
+        return array_merge([
+            'first_name' => 'Jane',
+            'last_name' => 'Doe',
+            'country' => 'TST',
+            'category' => 'women',
+            'disciplines' => ['boulder'],
+        ], $overrides);
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $startList
+     * @param array<string, mixed>|null $round
+     * @return array<int, array<string, mixed>>
+     */
+    private function invokeGetFilteredStartList(array $startList, ?array $round): array
+    {
+        $event = ['start_list' => $startList];
+        $method = new \ReflectionMethod(IcsGenerator::class, 'getFilteredStartList');
+        return $method->invoke($this->generator, $event, $round);
+    }
+
+    private function invokeAthleteMatchesRound(array $athlete, array $categories, array $disciplines): bool
+    {
+        $method = new \ReflectionMethod(IcsGenerator::class, 'athleteMatchesRound');
+        return $method->invoke($this->generator, $athlete, $categories, $disciplines);
+    }
+
+    public function test_getFilteredStartList_null_round_returns_full_list(): void
+    {
+        $startList = [$this->sampleAthlete(), $this->sampleAthlete(['first_name' => 'John'])];
+
+        $result = $this->invokeGetFilteredStartList($startList, null);
+
+        $this->assertCount(2, $result);
+    }
+
+    public function test_getFilteredStartList_empty_categories_and_disciplines_returns_full_list(): void
+    {
+        $startList = [$this->sampleAthlete(), $this->sampleAthlete(['first_name' => 'John'])];
+
+        $result = $this->invokeGetFilteredStartList($startList, [
+            'categories' => [],
+            'disciplines' => [],
+        ]);
+
+        $this->assertCount(2, $result);
+    }
+
+    public function test_getFilteredStartList_empty_categories_but_has_disciplines_filters(): void
+    {
+        $boulderAthlete = $this->sampleAthlete(['disciplines' => ['boulder']]);
+        $speedAthlete = $this->sampleAthlete(['first_name' => 'Speedo', 'disciplines' => ['speed']]);
+        $startList = [$boulderAthlete, $speedAthlete];
+
+        $result = $this->invokeGetFilteredStartList($startList, [
+            'categories' => [],
+            'disciplines' => ['boulder'],
+        ]);
+
+        $this->assertCount(1, $result);
+        $this->assertEquals('Jane', reset($result)['first_name']);
+    }
+
+    public function test_athleteMatchesRound_category_match_discipline_match(): void
+    {
+        $athlete = $this->sampleAthlete(['category' => 'women', 'disciplines' => ['boulder']]);
+
+        $result = $this->invokeAthleteMatchesRound($athlete, ['women'], ['boulder']);
+
+        $this->assertTrue($result);
+    }
+
+    public function test_athleteMatchesRound_category_mismatch(): void
+    {
+        $athlete = $this->sampleAthlete(['category' => 'men', 'disciplines' => ['boulder']]);
+
+        $result = $this->invokeAthleteMatchesRound($athlete, ['women'], ['boulder']);
+
+        $this->assertFalse($result);
+    }
+
+    public function test_athleteMatchesRound_discipline_mismatch(): void
+    {
+        $athlete = $this->sampleAthlete(['category' => 'women', 'disciplines' => ['speed']]);
+
+        $result = $this->invokeAthleteMatchesRound($athlete, ['women'], ['boulder']);
+
+        $this->assertFalse($result);
+    }
+
+    public function test_athleteMatchesRound_no_category_field_passes(): void
+    {
+        $athlete = $this->sampleAthlete(['disciplines' => ['boulder']]);
+        unset($athlete['category']);
+
+        $result = $this->invokeAthleteMatchesRound($athlete, ['women'], ['boulder']);
+
+        $this->assertTrue($result);
+    }
+
+    public function test_athleteMatchesRound_no_disciplines_field_passes(): void
+    {
+        $athlete = $this->sampleAthlete(['category' => 'women']);
+        unset($athlete['disciplines']);
+
+        $result = $this->invokeAthleteMatchesRound($athlete, ['women'], ['boulder']);
+
+        $this->assertTrue($result);
+    }
+
+    public function test_athleteMatchesRound_empty_categories_passes_category_check(): void
+    {
+        $athlete = $this->sampleAthlete(['category' => 'men', 'disciplines' => ['boulder']]);
+
+        $result = $this->invokeAthleteMatchesRound($athlete, [], ['boulder']);
+
+        $this->assertTrue($result);
+    }
+
+    public function test_athleteMatchesRound_empty_disciplines_passes_discipline_check(): void
+    {
+        $athlete = $this->sampleAthlete(['category' => 'women', 'disciplines' => ['speed']]);
+
+        $result = $this->invokeAthleteMatchesRound($athlete, ['women'], []);
+
+        $this->assertTrue($result);
+    }
+
+    public function test_athleteMatchesRound_both_mismatch(): void
+    {
+        $athlete = $this->sampleAthlete(['category' => 'men', 'disciplines' => ['speed']]);
+
+        $result = $this->invokeAthleteMatchesRound($athlete, ['women'], ['boulder']);
+
+        $this->assertFalse($result);
+    }
+
+    public function test_athleteMatchesRound_athlete_has_multiple_disciplines_one_matches(): void
+    {
+        $athlete = $this->sampleAthlete(['category' => 'women', 'disciplines' => ['boulder', 'lead']]);
+
+        $result = $this->invokeAthleteMatchesRound($athlete, ['women'], ['lead']);
+
+        $this->assertTrue($result);
+    }
+
+    public function test_athleteMatchesRound_round_has_multiple_categories_one_matches(): void
+    {
+        $athlete = $this->sampleAthlete(['category' => 'women', 'disciplines' => ['boulder']]);
+
+        $result = $this->invokeAthleteMatchesRound($athlete, ['women', 'men'], ['boulder']);
+
+        $this->assertTrue($result);
     }
 
     // ── ICS validation with sabre/vobject ───────────────────────────

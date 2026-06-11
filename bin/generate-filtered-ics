@@ -33,7 +33,7 @@ if (!is_array($json) || !isset($json['events'])) {
 $params = new FilterParams($disciplines, $kinds, $categories);
 $filtered = CalendarFilter::apply($json['events'], $params);
 
-$gen = new IcsGenerator(new CalendarFactory(), '-//IFSC//IFSC Calendar//EN', 'PT12H', '');
+$gen = new IcsGenerator(new CalendarFactory(), '-//ifsc//ical//EN', 'PT1H', 'IFSC');
 file_put_contents($outputFile, $gen->generateForEvents($filtered));
 
 $veventCount = substr_count(file_get_contents($outputFile), 'BEGIN:VEVENT');
