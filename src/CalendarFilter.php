@@ -22,6 +22,10 @@ final class CalendarFilter
         $filtered = [];
 
         foreach ($events as $event) {
+            if (!self::matchesSeries($event, $params->series)) {
+                continue;
+            }
+
             $rounds = $event['rounds'] ?? [];
 
             $keptRounds = array_filter(
@@ -99,5 +103,26 @@ final class CalendarFilter
         }
 
         return $disciplines;
+    }
+
+    /**
+     * @param array<string, mixed> $event
+     * @param string[] $selected
+     */
+    private static function matchesSeries(array $event, array $selected): bool
+    {
+        if ($selected === []) {
+            return true;
+        }
+
+        $seriesMap = [
+            'world' => 'World Cups and World Championships',
+            'para' => 'IFSC Paraclimbing',
+        ];
+
+        $eventLeague = $event['league_name'] ?? '';
+
+        return array_any($selected, fn (string $slug): bool => ($seriesMap[$slug] ?? null) === $eventLeague);
+
     }
 }
