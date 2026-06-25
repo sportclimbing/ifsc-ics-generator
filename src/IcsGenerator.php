@@ -31,6 +31,7 @@ final readonly class IcsGenerator
         private string $productIdentifier,
         private string $publishedTtl,
         private string $calendarName,
+        private bool $showNewCalendarNotice = false,
     ) {}
 
     /**
@@ -219,6 +220,11 @@ final readonly class IcsGenerator
     {
         $eventName = $event['name'] ?? '';
         $description = "{$eventName}\n\n";
+
+        if ($this->showNewCalendarNotice) {
+            $description .= "🔥You can now configure which events are shown in your calendar!\n";
+            $description .= "https://ifsc.stream/calendar/\n\n";
+        }
 
         if ($round !== null && $this->isProvisional($round)) {
             $description .= "⚠️ Schedule is provisional and might change. ";
