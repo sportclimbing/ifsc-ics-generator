@@ -246,7 +246,7 @@ final readonly class IcsGenerator
         $description .= "https://fantasyclimbingleague.com/\n\n";
 
         $description .= "☕️ If you find this useful, please consider buying me a coffee:\n";
-        $description .= "https://buymeacoffee.com/sportclimbing\n\n";
+        $description .= "https://buymeacoffee.com/nicoswd\n\n";
 
         $description .= "💬 Join Discord:\n";
         $description .= "https://discord.gg/rbM5vjcVHM\n\n";
